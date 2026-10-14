@@ -51,6 +51,10 @@ button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid va
 .ri .ra b{color:var(--ok);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:2px}
 .ri .ra ul{margin:4px 0 0;padding-left:20px}
 mark{background:#ffe58a;color:#18212e;border-radius:2px;padding:0 1px}
+mark.kw{background:#ffe58a;color:#18212e;font-weight:700;box-shadow:0 1px 0 #d9a400}
+.tip{display:flex;gap:10px;align-items:flex-start;background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:.95rem;color:var(--ink)}
+.tip .ti{flex:none;font:700 .72rem/1.9 var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.tip q{quotes:"«" "»";font-weight:700}
 .modes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px}
 .modes button{border:0;background:none;border-radius:8px;padding:10px 12px;font:700 1rem/1.2 var(--f-display);color:var(--muted);display:flex;flex-direction:column;gap:2px;align-items:center}
 .modes button small{font:400 .78rem/1.2 var(--f-body)}
@@ -177,8 +181,56 @@ const lessonsOf=si=>{const n=DATA[si].qs.length,out=[];for(let i=0;i<n;i+=LSIZE)
 const prog=()=>store.get('lessons',{});   // {"sec-lesson": best%}
 
 /* "Все ответы верные" -> раскрыть, что именно верно */
-const ALL=/^(все|оба)\b.*(верн|правильн|вариант|перечисл|ответ|акты)|^все варианты/i;
-const AB=/^(ответы\s+)?а\s+и\s+б\b/i;
+const ALL=/^(все|оба)(?![а-я]).*(верн|правильн|вариант|перечисл|ответ|акты)|^все варианты/i;
+const AB=/^(ответы\s+)?а\s+и\s+б(?![а-я])/i;
+/* ---------- КЛЮЧЕВЫЕ СЛОВА: чем верный вариант отличается от неверных ---------- */
+const STOP=new Set('и в во на с со по к ко о об от до из за для а или же при у то как что это его ее их также'.split(' '));
+const WORD=/[0-9]+(?:[.,][0-9]+)*|[a-zа-яё№]+/gi;
+const nw=s=>s.toLowerCase().replace(/ё/g,'е');
+const toks=s=>(s.match(WORD)||[]).map(nw).filter(w=>!STOP.has(w));
+const HCACHE=new Map();
+function keyHint(q){
+  if(HCACHE.has(q)) return HCACHE.get(q);
+  const isMeta=t=>ALL.test(t)||AB.test(t)||/^нет верн/i.test(t);
+  const out=q.c.map(ci=>{
+    const ct=q.o[ci].trim();
+    if(ALL.test(ct)) return {ci,type:'all'};
+    if(AB.test(ct)) return {ci,type:'ab'};
+    const C=[...new Set(toks(ct))];
+    const wrongs=q.o.map((o,i)=>i).filter(i=>!q.c.includes(i)&&!isMeta(q.o[i].trim()));
+    const W=wrongs.map(i=>new Set(toks(q.o[i])));
+    let need=W.map((ws,k)=>({k,d:C.filter(t=>!ws.has(t))}));
+    const extra=[];
+    need.filter(n=>!n.d.length).forEach(n=>{const ex=[...W[n.k]].filter(t=>!C.includes(t));if(ex.length)extra.push(ex.slice(0,4))});
+    need=need.filter(n=>n.d.length);
+    const keys=[];
+    while(need.length&&keys.length<4){
+      const cnt={};need.forEach(n=>n.d.forEach(t=>cnt[t]=(cnt[t]||0)+1));
+      const best=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||(/\d/.test(b)-/\d/.test(a))||b.length-a.length)[0];
+      keys.push(best);need=need.filter(n=>!n.d.includes(best));
+    }
+    return {ci,type:'keys',keys,extra};
+  });
+  HCACHE.set(q,out);return out;
+}
+function kwHL(q,text){
+  const h=keyHint(q).find(x=>q.o[x.ci]===text&&x.type==='keys');
+  if(!h||!h.keys.length) return esc(text);
+  const K=new Set(h.keys);
+  return esc(text).replace(WORD,w=>K.has(nw(w))?`<mark class="kw">${w}</mark>`:w);
+}
+function hintHTML(q){
+  const H=keyHint(q),lines=[];
+  H.forEach(h=>{
+    if(h.type==='all') lines.push('Все перечисленные пункты верны, поэтому правильный вариант — «'+esc(q.o[h.ci].trim().replace(/[.;]$/,''))+'».');
+    else if(h.type==='ab') lines.push('Верны сразу оба варианта — А и Б.');
+    else{
+      if(h.keys.length) lines.push(`${h.keys.length>1?'Ключевые слова':'Ключевое слово'}: ${h.keys.map(k=>'<q>'+esc(k)+'</q>').join(' + ')} — по ${h.keys.length>1?'ним':'нему'} верный вариант отличается от неверных.`);
+      h.extra.forEach(ex=>lines.push(`Ловушка: похожий неверный вариант добавляет лишнее — ${ex.map(k=>'<q>'+esc(k)+'</q>').join(', ')}.`));
+    }
+  });
+  return lines.length?`<div class="tip"><span class="ti">Подсказка</span><div>${lines.join('<br>')}</div></div>`:'';
+}
 function answerParts(q){
   const parts=[];
   q.c.forEach(i=>{
@@ -299,6 +351,7 @@ function showResults(){
       <div class="rs">${esc(DATA[r.si].name)} · вопрос ${r.qi+1}</div>
       <div class="rq">${hl(q.q,st)}</div>
       <div class="ra"><b>${q.c.length>1?'Правильные ответы':'Правильный ответ'}</b>${parts.map(p=>`<div>${hl(p.t,st)}${p.list?`<ul>${p.list.map(x=>`<li>${hl(x,st)}</li>`).join('')}</ul>`:''}</div>`).join('')}</div>
+      ${hintHTML(q)}
     </div>`}).join('');
 }
 function go(screen,extra={}){S={...S,...extra,screen};render();window.scrollTo({top:0})}
@@ -344,8 +397,9 @@ function study(){
     ${S.shown?`
       <div class="answer">
         <span class="al">${q.c.length>1?'Правильные ответы':'Правильный ответ'}</span>
-        ${parts.map(p=>`<div class="at">${esc(p.t)}${p.list?`<ul>${p.list.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}</div>`).join('')}
+        ${parts.map(p=>`<div class="at">${kwHL(q,p.t)}${p.list?`<ul>${p.list.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}</div>`).join('')}
       </div>
+      ${hintHTML(q)}
       ${others.length?`<div class="others">${S.others?`Неверные варианты:<ul>${others.map(x=>`<li>${esc(x.o)}</li>`).join('')}</ul>`:`<button class="link" id="oth">Показать неверные варианты</button>`}</div>`:''}
     `:`<button class="reveal" id="reveal">Вспомните ответ и нажмите, чтобы проверить</button>`}
     <div class="foot">
@@ -398,9 +452,9 @@ function quiz(){
         if(done){const isC=q.c.includes(i),isP=picked.includes(i);
           if(isC){cls='right';mark=isP?'Верно':'Правильный ответ'} else if(isP){cls='wrong';mark='Ваш ответ'} else cls='dim';}
         else if(picked.includes(i)) cls='sel';
-        return `<button class="opt ${cls}" data-o="${i}" ${done?'disabled':''}><span class="key">${LET[i]}</span><span class="t">${esc(o)}</span>${mark?`<span class="mark">${mark}</span>`:''}</button>`}).join('')}
+        return `<button class="opt ${cls}" data-o="${i}" ${done?'disabled':''}><span class="key">${LET[i]}</span><span class="t">${done&&q.c.includes(i)?kwHL(q,o):esc(o)}</span>${mark?`<span class="mark">${mark}</span>`:''}</button>`}).join('')}
     </div>
-    ${done?(ans.ok?`<div class="verdict ok"><b>Верно</b></div>`:`<div class="verdict bad"><b>Ошибка</b><span class="ans">Правильный ответ: ${esc(answerText(q))}</span></div>`):''}
+    ${done?(ans.ok?`<div class="verdict ok"><b>Верно</b></div>`:`<div class="verdict bad"><b>Ошибка</b><span class="ans">Правильный ответ: ${esc(answerText(q))}</span></div>`)+hintHTML(q):''}
     <div class="foot">
       <button class="ghost" id="exit">${S.fromLesson!=null?'К урокам':'К разделам'}</button>
       <div class="row">
