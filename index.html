@@ -34,7 +34,24 @@ button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid va
 .num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 
 /* mode switch */
-.modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px}
+.search{display:flex;flex-direction:column;gap:12px}
+.sbox{position:relative}
+.sbox input{width:100%;font:inherit;font-size:1.05rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 44px 13px 14px}
+.sbox input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.sbox .clr{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;width:34px;height:34px;border-radius:6px;color:var(--muted);font-size:1.2rem}
+.sfilter{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:.88rem}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.scount{font-size:.9rem;color:var(--muted)}
+.res{display:flex;flex-direction:column;gap:10px}
+.ri{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.ri .rs{font:700 .72rem/1 var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ri .rq{font-weight:700;white-space:pre-line}
+.ri .ra{border-left:4px solid var(--ok);background:var(--ok-soft);border-radius:0 6px 6px 0;padding:8px 12px;white-space:pre-line}
+.ri .ra b{color:var(--ok);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:2px}
+.ri .ra ul{margin:4px 0 0;padding-left:20px}
+mark{background:#ffe58a;color:#18212e;border-radius:2px;padding:0 1px}
+.modes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px}
 .modes button{border:0;background:none;border-radius:8px;padding:10px 12px;font:700 1rem/1.2 var(--f-display);color:var(--muted);display:flex;flex-direction:column;gap:2px;align-items:center}
 .modes button small{font:400 .78rem/1.2 var(--f-body)}
 .modes button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
@@ -178,6 +195,7 @@ const answerText=q=>q.c.map(i=>LET[i]+') '+q.o[i]).join('; ');
 function home(){
   const best=store.get('best',{}), P=prog();
   const learn=S.mode==='learn';
+  if(S.mode==='search') return searchView();
   const secInfo=(s,i)=>{
     if(learn){const L=lessonsOf(i),done=L.filter((_,k)=>(P[i+'-'+k]??-1)>=80).length;
       return `<div class="meta">Уроков: <span class="num">${done}</span> из <span class="num">${L.length}</span> пройдено</div><div class="minibar"><i style="width:${done/L.length*100}%"></i></div>`}
@@ -187,12 +205,9 @@ function home(){
   <header>
     <div class="eyebrow">Тренажёр · 2026</div>
     <h1 style="margin-top:8px">Контрольные тесты</h1>
-    <p class="lead">${learn?'Сначала изучите материал по урокам: 10 вопросов с правильными ответами, затем короткая проверка.':'Выберите раздел и начните. После каждого ответа сразу видно, верно ли, и какой ответ правильный.'}</p>
+    <p class="lead">${learn?'Изучите материал по урокам: вопрос и сразу правильный ответ, после 10 вопросов — короткая проверка.':'Выберите раздел и начните. После каждого ответа сразу видно, верно ли, и какой ответ правильный.'}</p>
   </header>
-  <div class="modes" role="group" aria-label="Режим">
-    <button data-mode="learn" aria-pressed="${learn}">Обучение<small>учить по урокам</small></button>
-    <button data-mode="test" aria-pressed="${!learn}">Тесты<small>проверить себя</small></button>
-  </div>
+  ${modesHTML()}
   <div class="sections" role="group" aria-label="Раздел">
     ${DATA.map((s,i)=>`<button class="sec" data-sec="${i}" aria-pressed="${i==S.sec}">
       <span class="radio"></span>
@@ -212,6 +227,79 @@ function home(){
   app.querySelectorAll('[data-limit]').forEach(b=>b.onclick=()=>{S.limit=+b.dataset.limit;store.set('limit',S.limit);render()});
   const sh=app.querySelector('#shuf'); if(sh) sh.onchange=e=>{S.shuffle=e.target.checked;store.set('shuffle',S.shuffle)};
   app.querySelector('#go').onclick=()=>learn?go('lessons'):start();
+}
+function modesHTML(){
+  return `<div class="modes" role="group" aria-label="Режим">
+    <button data-mode="learn" aria-pressed="${S.mode==='learn'}">Обучение<small>учить по урокам</small></button>
+    <button data-mode="test" aria-pressed="${S.mode==='test'||!S.mode}">Тесты<small>проверить себя</small></button>
+    <button data-mode="search" aria-pressed="${S.mode==='search'}">Поиск<small>найти ответ</small></button>
+  </div>`;
+}
+
+/* ---------- SEARCH ---------- */
+const norm=s=>String(s).toLowerCase().replace(/ё/g,'е').replace(/[«»"“”„]/g,' ');
+const INDEX=[];DATA.forEach((s,si)=>s.qs.forEach((q,qi)=>INDEX.push({si,qi,q:norm(q.q),o:norm(q.o.join(' '))})));
+function stems(query){
+  return norm(query).split(/[^a-zа-я0-9№]+/i).filter(w=>w.length>1||/\d/.test(w))
+    .map(w=>w.length>5?w.slice(0,w.length-2):w);  // отрезаем окончания: "пистолета" ~ "пистолет"
+}
+function hl(text,st){
+  let out=esc(text);
+  if(!st.length) return out;
+  const re=new RegExp('('+st.map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).sort((a,b)=>b.length-a.length).join('|')+')[а-яa-z]*','gi');
+  // подсветка без учёта ё
+  return out.replace(re,'<mark>$&</mark>');
+}
+function doSearch(query,sec){
+  const st=stems(query); if(!st.length) return {st,res:[]};
+  const res=[];
+  for(const it of INDEX){
+    if(sec!=null&&it.si!==sec) continue;
+    let inQ=0,inAll=0;
+    for(const w of st){ if(it.q.includes(w)){inQ++;inAll++} else if(it.o.includes(w)) inAll++; }
+    if(inAll===st.length) res.push({...it,score:inQ*10+(it.q.startsWith(st[0])?5:0)});
+  }
+  res.sort((a,b)=>b.score-a.score||a.si-b.si||a.qi-b.qi);
+  return {st,res};
+}
+function searchView(){
+  app.innerHTML=`
+  <header>
+    <div class="eyebrow">Тренажёр · 2026</div>
+    <h1 style="margin-top:8px">Контрольные тесты</h1>
+    <p class="lead">Начните вводить вопрос или несколько слов из него — правильный ответ появится сразу.</p>
+  </header>
+  ${modesHTML()}
+  <div class="search">
+    <div class="sbox"><input id="q" type="text" enterkeyhint="search" placeholder="Например: длина ствола" autocomplete="off" value="${esc(S.query||'')}" aria-label="Поиск по вопросам"><button class="clr" id="clr" aria-label="Очистить" ${S.query?'':'hidden'}>×</button></div>
+    <div class="sfilter" role="group" aria-label="Раздел">
+      <button class="chip" data-f="" aria-pressed="${S.sfilter==null}">Все разделы</button>
+      ${DATA.map((s,i)=>`<button class="chip" data-f="${i}" aria-pressed="${S.sfilter===i}">${esc(s.name)}</button>`).join('')}
+    </div>
+    <div class="scount" id="cnt"></div>
+    <div class="res" id="res"></div>
+  </div>`;
+  app.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{S.mode=b.dataset.mode;store.set('mode',S.mode);render()});
+  const inp=app.querySelector('#q'),clr=app.querySelector('#clr');
+  let t; inp.oninput=()=>{S.query=inp.value;clr.hidden=!inp.value;clearTimeout(t);t=setTimeout(showResults,120)};
+  clr.onclick=()=>{inp.value='';S.query='';clr.hidden=true;showResults();inp.focus()};
+  app.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.sfilter=b.dataset.f===''?null:+b.dataset.f;render()});
+  showResults();
+  if(matchMedia('(min-width:700px)').matches) inp.focus({preventScroll:true});
+}
+function showResults(){
+  const box=document.getElementById('res'),cnt=document.getElementById('cnt'); if(!box) return;
+  const {st,res}=doSearch(S.query||'',S.sfilter);
+  if(!st.length){cnt.textContent='';box.innerHTML='';return}
+  if(!res.length){cnt.textContent='Ничего не найдено. Попробуйте ввести меньше слов или другое слово из вопроса.';box.innerHTML='';return}
+  const MAX=40;
+  cnt.textContent=`Найдено: ${res.length}${res.length>MAX?' — показаны первые '+MAX+', уточните запрос':''}`;
+  box.innerHTML=res.slice(0,MAX).map(r=>{const q=DATA[r.si].qs[r.qi],parts=answerParts(q);
+    return `<div class="ri">
+      <div class="rs">${esc(DATA[r.si].name)} · вопрос ${r.qi+1}</div>
+      <div class="rq">${hl(q.q,st)}</div>
+      <div class="ra"><b>${q.c.length>1?'Правильные ответы':'Правильный ответ'}</b>${parts.map(p=>`<div>${hl(p.t,st)}${p.list?`<ul>${p.list.map(x=>`<li>${hl(x,st)}</li>`).join('')}</ul>`:''}</div>`).join('')}</div>
+    </div>`}).join('');
 }
 function go(screen,extra={}){S={...S,...extra,screen};render();window.scrollTo({top:0})}
 
@@ -233,16 +321,15 @@ function lessons(){
         <span class="first">${esc(sec.qs[ids[0]].q)}</span>
         <span class="lp">${p==null?'Не начат':p>=80?'✓ Пройден · '+p+'%':'Проверка: '+p+'% — повторите'}</span>
       </button>`}).join('')}
-  </div>
-  <label class="check"><input type="checkbox" id="auto" ${S.autoShow?'checked':''}> Сразу показывать ответы (без самопроверки)</label>`;
+  </div>`;
   app.querySelector('#back').onclick=()=>go('home');
-  app.querySelector('#auto').onchange=e=>{S.autoShow=e.target.checked;store.set('autoShow',S.autoShow)};
   app.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>go('study',{lesson:+b.dataset.l,spos:0,shown:S.autoShow,others:false}));
 }
 
 /* ---------- STUDY CARD ---------- */
 function study(){
   const sec=DATA[S.sec],ids=lessonsOf(S.sec)[S.lesson],qi=ids[S.spos],q=sec.qs[qi],last=S.spos+1===ids.length;
+  S.shown=true; // в обучении ответ показывается сразу
   const parts=answerParts(q);
   const others=q.o.map((o,i)=>({o,i})).filter(x=>!q.c.includes(x.i));
   app.innerHTML=`
