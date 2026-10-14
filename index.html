@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Контрольные тесты 2026</title>
 <style>
-/* Layout: one narrow working column; a header strip with the section and counters, the question card as the only raised object. */
+/* Layout: one narrow working column; mode switch on top, the card as the only raised object. */
 :root{
   --bg:#eef1f5; --surface:#ffffff; --ink:#18212e; --muted:#5a6676; --line:#d5dbe3;
   --accent:#1d4f91; --accent-soft:#e3ebf6; --ok:#1d7a46; --ok-soft:#e2f3e8; --bad:#b42a2a; --bad-soft:#fbe6e4;
@@ -33,6 +33,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 .num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 
+/* mode switch */
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px}
+.modes button{border:0;background:none;border-radius:8px;padding:10px 12px;font:700 1rem/1.2 var(--f-display);color:var(--muted);display:flex;flex-direction:column;gap:2px;align-items:center}
+.modes button small{font:400 .78rem/1.2 var(--f-body)}
+.modes button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+
 /* sections */
 .sections{display:flex;flex-direction:column;gap:8px}
 .sec{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;text-align:left;
@@ -43,8 +49,10 @@ button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid va
 .sec[aria-pressed="true"] .radio{border-color:var(--accent)}
 .sec[aria-pressed="true"] .radio::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent)}
 .sec .name{font-weight:700;min-width:0}
-.sec .meta{color:var(--muted);font-size:.85rem}
+.sec .meta{color:var(--muted);font-size:.85rem;font-weight:400}
 .sec .count{color:var(--muted);font-size:.9rem;text-align:right;white-space:nowrap}
+.minibar{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:6px;max-width:220px}
+.minibar i{display:block;height:100%;background:var(--ok)}
 .settings{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
 .seg button{border:0;background:none;padding:7px 12px;font-size:.92rem}
@@ -57,9 +65,22 @@ button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid va
 .primary:disabled{opacity:.45;cursor:default}
 .ghost{background:none;border:1px solid var(--line);border-radius:8px;padding:10px 16px}
 .ghost:hover{border-color:var(--accent)}
+.link{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;text-underline-offset:3px;font-size:.92rem}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 
-/* quiz */
+/* lessons list */
+.lessons{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.lesson{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.lesson:hover{border-color:var(--accent)}
+.lesson .lt{font-weight:700;font-family:var(--f-display)}
+.lesson .ls{font-size:.85rem;color:var(--muted)}
+.lesson .lp{font-size:.82rem;font-weight:700}
+.lesson.done{border-color:var(--ok)}
+.lesson.done .lp{color:var(--ok)}
+.lesson.part .lp{color:var(--accent)}
+.lesson .first{font-size:.85rem;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+/* quiz + study */
 .bar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:center}
 .progress{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
 .progress i{display:block;height:100%;background:var(--accent);transition:width .25s}
@@ -93,13 +114,27 @@ button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid va
 .foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
 .kbd{font-size:.82rem;color:var(--muted)}
 
+/* study card */
+.answer{border-left:4px solid var(--ok);background:var(--ok-soft);border-radius:0 8px 8px 0;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.answer .al{font:700 .72rem/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--ok)}
+.answer .at{font-size:1.12rem;font-weight:700;white-space:pre-line}
+.answer ul{margin:4px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-weight:400;font-size:1rem}
+.reveal{border:2px dashed var(--line);border-radius:10px;background:none;padding:22px;color:var(--muted);font-weight:700}
+.reveal:hover{border-color:var(--accent);color:var(--accent)}
+.others{font-size:.92rem;color:var(--muted)}
+.others ul{margin:6px 0 0;padding-left:20px}
+.others li{text-decoration:line-through;text-decoration-color:var(--bad);white-space:pre-line}
+.dots{display:flex;gap:4px;flex-wrap:wrap}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.dots i.seen{background:var(--accent)}
+.dots i.cur{box-shadow:0 0 0 2px var(--accent)}
+
 /* results */
 .big{font:700 3rem/1 var(--f-display)}
 .mist{display:flex;flex-direction:column;gap:10px}
 .mi{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--bad);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
 .mi .q{font-weight:700;white-space:pre-line}
 .mi .y{color:var(--bad);white-space:pre-line} .mi .c{color:var(--ok);white-space:pre-line}
-.mi small{color:var(--muted)}
 @media (max-width:480px){.kbd{display:none}h1{font-size:1.45rem}.card{padding:16px}.opt{grid-template-columns:26px 1fr}.opt .mark{grid-column:2}}
 @media (prefers-reduced-motion:reduce){.progress i{transition:none}}
 </style>
@@ -113,55 +148,156 @@ button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid va
 <script>
 const DATA=JSON.parse(document.getElementById('data').textContent);
 const LET=['А','Б','В','Г','Д','Е','Ж','З','И'];
+const LSIZE=10;
 const app=document.getElementById('app');
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-let S=window.claude?.hot?.data?.S || {screen:'home',sec:store.get('sec',0),limit:store.get('limit',0),shuffle:store.get('shuffle',true)};
+let S=window.claude?.hot?.data?.S || {screen:'home',mode:store.get('mode','learn'),sec:store.get('sec',0),limit:store.get('limit',0),shuffle:store.get('shuffle',true),autoShow:store.get('autoShow',false)};
 window.claude?.hot?.snapshot?.(()=>({S}));
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function plural(n,f){const m=n%10,h=n%100;return f[(m==1&&h!=11)?0:(m>=2&&m<=4&&(h<10||h>=20))?1:2]}
+const lessonsOf=si=>{const n=DATA[si].qs.length,out=[];for(let i=0;i<n;i+=LSIZE)out.push([...Array(Math.min(LSIZE,n-i)).keys()].map(k=>i+k));return out};
+const prog=()=>store.get('lessons',{});   // {"sec-lesson": best%}
 
-function start(order){
-  const sec=DATA[S.sec];
-  let ids=order||sec.qs.map((_,i)=>i);
-  if(!order){ if(S.shuffle) ids=shuffle(ids); if(S.limit) ids=ids.slice(0,S.limit); }
-  S={...S,screen:'quiz',order:ids,pos:0,answers:{},picked:[]};
-  render();
+/* "Все ответы верные" -> раскрыть, что именно верно */
+const ALL=/^(все|оба)\b.*(верн|правильн|вариант|перечисл|ответ|акты)|^все варианты/i;
+const AB=/^(ответы\s+)?а\s+и\s+б\b/i;
+function answerParts(q){
+  const parts=[];
+  q.c.forEach(i=>{
+    const t=q.o[i].trim();
+    if(ALL.test(t)) parts.push({t, list:q.o.filter((o,j)=>j!==i && !/^нет верн/i.test(o.trim()))});
+    else if(AB.test(t)) parts.push({t, list:[q.o[0],q.o[1]]});
+    else parts.push({t});
+  });
+  return parts;
 }
+const answerText=q=>q.c.map(i=>LET[i]+') '+q.o[i]).join('; ');
+
+/* ---------- HOME ---------- */
 function home(){
-  const best=store.get('best',{});
+  const best=store.get('best',{}), P=prog();
+  const learn=S.mode==='learn';
+  const secInfo=(s,i)=>{
+    if(learn){const L=lessonsOf(i),done=L.filter((_,k)=>(P[i+'-'+k]??-1)>=80).length;
+      return `<div class="meta">Уроков: <span class="num">${done}</span> из <span class="num">${L.length}</span> пройдено</div><div class="minibar"><i style="width:${done/L.length*100}%"></i></div>`}
+    return best[i]!=null?`<div class="meta">Лучший результат: <span class="num">${best[i]}%</span></div>`:'';
+  };
   app.innerHTML=`
   <header>
     <div class="eyebrow">Тренажёр · 2026</div>
     <h1 style="margin-top:8px">Контрольные тесты</h1>
-    <p class="lead">Выберите раздел и начните. После каждого ответа сразу видно, верно ли, и какой ответ правильный.</p>
+    <p class="lead">${learn?'Сначала изучите материал по урокам: 10 вопросов с правильными ответами, затем короткая проверка.':'Выберите раздел и начните. После каждого ответа сразу видно, верно ли, и какой ответ правильный.'}</p>
   </header>
+  <div class="modes" role="group" aria-label="Режим">
+    <button data-mode="learn" aria-pressed="${learn}">Обучение<small>учить по урокам</small></button>
+    <button data-mode="test" aria-pressed="${!learn}">Тесты<small>проверить себя</small></button>
+  </div>
   <div class="sections" role="group" aria-label="Раздел">
     ${DATA.map((s,i)=>`<button class="sec" data-sec="${i}" aria-pressed="${i==S.sec}">
       <span class="radio"></span>
-      <span class="name">${esc(s.name)}${best[i]!=null?`<div class="meta">Лучший результат: <span class="num">${best[i]}%</span></div>`:''}</span>
+      <span class="name">${esc(s.name)}${secInfo(s,i)}</span>
       <span class="count num">${s.qs.length} ${plural(s.qs.length,['вопрос','вопроса','вопросов'])}</span></button>`).join('')}
   </div>
+  ${learn?`<div class="row"><button class="primary" id="go">Открыть уроки: ${esc(DATA[S.sec].name)}</button></div>`:`
   <div class="settings">
     <div><span class="lbl">Вопросов</span><span class="seg" role="group" aria-label="Количество вопросов">
       ${[[0,'Все'],[10,'10'],[20,'20'],[50,'50']].map(([v,l])=>`<button data-limit="${v}" aria-pressed="${S.limit==v}">${l}</button>`).join('')}
     </span></div>
     <label class="check"><input type="checkbox" id="shuf" ${S.shuffle?'checked':''}> Перемешать вопросы</label>
   </div>
-  <div class="row"><button class="primary" id="go">Начать: ${esc(DATA[S.sec].name)}</button></div>`;
+  <div class="row"><button class="primary" id="go">Начать: ${esc(DATA[S.sec].name)}</button></div>`}`;
+  app.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{S.mode=b.dataset.mode;store.set('mode',S.mode);render()});
   app.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{S.sec=+b.dataset.sec;store.set('sec',S.sec);render()});
   app.querySelectorAll('[data-limit]').forEach(b=>b.onclick=()=>{S.limit=+b.dataset.limit;store.set('limit',S.limit);render()});
-  app.querySelector('#shuf').onchange=e=>{S.shuffle=e.target.checked;store.set('shuffle',S.shuffle)};
-  app.querySelector('#go').onclick=()=>start();
+  const sh=app.querySelector('#shuf'); if(sh) sh.onchange=e=>{S.shuffle=e.target.checked;store.set('shuffle',S.shuffle)};
+  app.querySelector('#go').onclick=()=>learn?go('lessons'):start();
+}
+function go(screen,extra={}){S={...S,...extra,screen};render();window.scrollTo({top:0})}
+
+/* ---------- LESSONS LIST ---------- */
+function lessons(){
+  const sec=DATA[S.sec],L=lessonsOf(S.sec),P=prog();
+  app.innerHTML=`
+  <header>
+    <button class="link" id="back">← Все разделы</button>
+    <div class="eyebrow" style="margin-top:14px">Обучение</div>
+    <h1 style="margin-top:8px">${esc(sec.name)}</h1>
+    <p class="lead">${L.length} ${plural(L.length,['урок','урока','уроков'])} по ${LSIZE} вопросов в порядке документа. Урок считается пройденным, если в проверке не меньше 80% верных ответов.</p>
+  </header>
+  <div class="lessons">
+    ${L.map((ids,k)=>{const p=P[S.sec+'-'+k];const cls=p==null?'':p>=80?'done':'part';
+      return `<button class="lesson ${cls}" data-l="${k}">
+        <span class="lt">Урок ${k+1}</span>
+        <span class="ls num">Вопросы ${ids[0]+1}–${ids[ids.length-1]+1}</span>
+        <span class="first">${esc(sec.qs[ids[0]].q)}</span>
+        <span class="lp">${p==null?'Не начат':p>=80?'✓ Пройден · '+p+'%':'Проверка: '+p+'% — повторите'}</span>
+      </button>`}).join('')}
+  </div>
+  <label class="check"><input type="checkbox" id="auto" ${S.autoShow?'checked':''}> Сразу показывать ответы (без самопроверки)</label>`;
+  app.querySelector('#back').onclick=()=>go('home');
+  app.querySelector('#auto').onchange=e=>{S.autoShow=e.target.checked;store.set('autoShow',S.autoShow)};
+  app.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>go('study',{lesson:+b.dataset.l,spos:0,shown:S.autoShow,others:false}));
+}
+
+/* ---------- STUDY CARD ---------- */
+function study(){
+  const sec=DATA[S.sec],ids=lessonsOf(S.sec)[S.lesson],qi=ids[S.spos],q=sec.qs[qi],last=S.spos+1===ids.length;
+  const parts=answerParts(q);
+  const others=q.o.map((o,i)=>({o,i})).filter(x=>!q.c.includes(x.i));
+  app.innerHTML=`
+  <div class="bar">
+    <div><div class="eyebrow">${esc(sec.name)} · Урок ${S.lesson+1}</div></div>
+    <div class="num" style="font-size:.92rem">${S.spos+1} / ${ids.length}</div>
+  </div>
+  <div class="dots" aria-hidden="true">${ids.map((_,k)=>`<i class="${k<S.spos?'seen':''} ${k===S.spos?'cur seen':''}"></i>`).join('')}</div>
+  <article class="card">
+    <div class="qnum">ВОПРОС ${qi+1}</div>
+    <p class="qtext">${esc(q.q)}</p>
+    ${S.shown?`
+      <div class="answer">
+        <span class="al">${q.c.length>1?'Правильные ответы':'Правильный ответ'}</span>
+        ${parts.map(p=>`<div class="at">${esc(p.t)}${p.list?`<ul>${p.list.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}</div>`).join('')}
+      </div>
+      ${others.length?`<div class="others">${S.others?`Неверные варианты:<ul>${others.map(x=>`<li>${esc(x.o)}</li>`).join('')}</ul>`:`<button class="link" id="oth">Показать неверные варианты</button>`}</div>`:''}
+    `:`<button class="reveal" id="reveal">Вспомните ответ и нажмите, чтобы проверить</button>`}
+    <div class="foot">
+      <div class="row">
+        <button class="ghost" id="exit">К урокам</button>
+        ${S.spos>0?`<button class="ghost" id="prev">Назад</button>`:''}
+      </div>
+      ${S.shown?`<button class="primary" id="next">${last?'Перейти к проверке':'Следующий вопрос'}</button>`:''}
+    </div>
+  </article>`;
+  app.querySelector('#exit').onclick=()=>go('lessons');
+  const pr=app.querySelector('#prev'); if(pr) pr.onclick=()=>{S.spos--;S.shown=true;S.others=false;render()};
+  const rv=app.querySelector('#reveal'); if(rv) rv.onclick=()=>{S.shown=true;render()};
+  const ot=app.querySelector('#oth'); if(ot) ot.onclick=()=>{S.others=true;render()};
+  const nx=app.querySelector('#next'); if(nx){nx.onclick=studyNext; nx.focus({preventScroll:true});}
+}
+function studyNext(){
+  const ids=lessonsOf(S.sec)[S.lesson];
+  if(S.spos+1<ids.length){S.spos++;S.shown=S.autoShow;S.others=false;render();window.scrollTo({top:0})}
+  else start(shuffle(ids),{fromLesson:S.lesson});
+}
+
+/* ---------- QUIZ ---------- */
+function start(order,opts={}){
+  const sec=DATA[S.sec];
+  let ids=order||sec.qs.map((_,i)=>i);
+  if(!order){ if(S.shuffle) ids=shuffle(ids); if(S.limit) ids=ids.slice(0,S.limit); }
+  S={...S,screen:'quiz',order:ids,pos:0,answers:{},picked:[],retry:!!opts.retry,fromLesson:opts.fromLesson??null};
+  render();window.scrollTo({top:0});
 }
 function counts(){let ok=0,bad=0;for(const k in S.answers){S.answers[k].ok?ok++:bad++}return{ok,bad}}
 function quiz(){
   const sec=DATA[S.sec], qi=S.order[S.pos], q=sec.qs[qi], multi=q.c.length>1;
   const ans=S.answers[S.pos], done=!!ans, total=S.order.length, {ok,bad}=counts();
   const picked=done?ans.picked:S.picked;
+  const label=S.fromLesson!=null?`${esc(sec.name)} · Проверка урока ${S.fromLesson+1}`:esc(sec.name);
   app.innerHTML=`
   <div class="bar">
-    <div><div class="eyebrow">${esc(sec.name)}</div></div>
+    <div><div class="eyebrow">${label}</div></div>
     <div class="score num"><span class="ok">✓ ${ok}</span><span class="bad">✗ ${bad}</span><span>${S.pos+1} / ${total}</span></div>
   </div>
   <div class="progress" aria-hidden="true"><i style="width:${(S.pos+(done?1:0))/total*100}%"></i></div>
@@ -177,16 +313,16 @@ function quiz(){
         else if(picked.includes(i)) cls='sel';
         return `<button class="opt ${cls}" data-o="${i}" ${done?'disabled':''}><span class="key">${LET[i]}</span><span class="t">${esc(o)}</span>${mark?`<span class="mark">${mark}</span>`:''}</button>`}).join('')}
     </div>
-    ${done?(ans.ok?`<div class="verdict ok"><b>Верно</b></div>`:`<div class="verdict bad"><b>Ошибка</b><span class="ans">Правильный ответ: ${q.c.map(i=>LET[i]+') '+esc(q.o[i])).join('; ')}</span></div>`):''}
+    ${done?(ans.ok?`<div class="verdict ok"><b>Верно</b></div>`:`<div class="verdict bad"><b>Ошибка</b><span class="ans">Правильный ответ: ${esc(answerText(q))}</span></div>`):''}
     <div class="foot">
-      <button class="ghost" id="exit">К разделам</button>
+      <button class="ghost" id="exit">${S.fromLesson!=null?'К урокам':'К разделам'}</button>
       <div class="row">
         <span class="kbd">${done?'Enter — дальше':'Клавиши 1–'+q.o.length+(multi?', Enter — ответить':'')}</span>
         ${done?`<button class="primary" id="next">${S.pos+1<total?'Следующий вопрос':'Результаты'}</button>`:(multi?`<button class="primary" id="submit" ${picked.length?'':'disabled'}>Ответить</button>`:'')}
       </div>
     </div>
   </article>`;
-  app.querySelector('#exit').onclick=()=>{S.screen='home';render()};
+  app.querySelector('#exit').onclick=()=>go(S.fromLesson!=null?'lessons':'home');
   if(!done){
     app.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>choose(+b.dataset.o));
     const s=app.querySelector('#submit'); if(s) s.onclick=submit;
@@ -206,38 +342,53 @@ function submit(){
   S.answers[S.pos]={picked:S.picked,ok:p.length===c.length&&p.every((v,i)=>v===c[i])};
   S.picked=[];render();
 }
-function next(){ if(S.pos+1<S.order.length){S.pos++;render();window.scrollTo({top:0})} else {S.screen='result';render();window.scrollTo({top:0})} }
+function next(){ if(S.pos+1<S.order.length){S.pos++;render();window.scrollTo({top:0})} else go('result') }
 function result(){
   const sec=DATA[S.sec],{ok,bad}=counts(),total=S.order.length,pct=Math.round(ok/total*100);
-  if(S.order.length===sec.qs.length||S.limit){const best=store.get('best',{});if(!S.retry&&(best[S.sec]==null||pct>best[S.sec])){best[S.sec]=pct;store.set('best',best)}}
+  const isLesson=S.fromLesson!=null, L=lessonsOf(S.sec);
+  if(!S.retry && !S.saved){
+    if(isLesson){const P=prog(),k=S.sec+'-'+S.fromLesson;if(P[k]==null||pct>P[k]){P[k]=pct;store.set('lessons',P)}}
+    else{const best=store.get('best',{});if(best[S.sec]==null||pct>best[S.sec]){best[S.sec]=pct;store.set('best',best)}}
+    S.saved=true;
+  }
   const wrong=Object.entries(S.answers).filter(([,a])=>!a.ok).map(([pos,a])=>({qi:S.order[pos],a}));
+  const hasNext=isLesson&&S.fromLesson+1<L.length;
   app.innerHTML=`
   <header>
-    <div class="eyebrow">${esc(sec.name)} · результат</div>
+    <div class="eyebrow">${esc(sec.name)} · ${isLesson?'Урок '+(S.fromLesson+1)+' · проверка':'результат'}</div>
     <div class="row" style="margin-top:10px;gap:18px;align-items:baseline">
       <span class="big num" style="color:${pct>=80?'var(--ok)':pct>=60?'var(--accent)':'var(--bad)'}">${pct}%</span>
       <span>Верно <b class="num">${ok}</b> из <span class="num">${total}</span>, ошибок <b class="num">${bad}</b></span>
     </div>
+    ${isLesson&&!S.retry?`<p class="lead">${pct>=80?'Урок пройден.':'Нужно не меньше 80%. Повторите карточки урока и пройдите проверку ещё раз.'}</p>`:''}
   </header>
   <div class="row">
-    ${wrong.length?`<button class="primary" id="retry">Повторить ошибки (${wrong.length})</button>`:''}
-    <button class="ghost" id="again">Пройти заново</button>
-    <button class="ghost" id="home">К разделам</button>
+    ${hasNext&&pct>=80?`<button class="primary" id="nextl">Следующий урок</button>`:''}
+    ${wrong.length?`<button class="${hasNext&&pct>=80?'ghost':'primary'}" id="retry">Повторить ошибки (${wrong.length})</button>`:''}
+    ${isLesson?`<button class="ghost" id="restudy">Повторить урок</button>`:`<button class="ghost" id="again">Пройти заново</button>`}
+    <button class="ghost" id="home">${isLesson?'К урокам':'К разделам'}</button>
   </div>
   ${wrong.length?`<h2>Разбор ошибок</h2><div class="mist">${wrong.map(({qi,a})=>{const q=sec.qs[qi];return `<div class="mi">
     <div class="q">${esc(q.q)}</div>
-    <div class="y">✗ Ваш ответ: ${a.picked.map(i=>LET[i]+') '+esc(q.o[i])).join('; ')}</div>
-    <div class="c">✓ Правильно: ${q.c.map(i=>LET[i]+') '+esc(q.o[i])).join('; ')}</div></div>`}).join('')}</div>`:`<p class="lead">Без единой ошибки.</p>`}`;
-  const r=app.querySelector('#retry'); if(r) r.onclick=()=>{S.retry=true;start(shuffle(wrong.map(w=>w.qi)))};
-  app.querySelector('#again').onclick=()=>{S.retry=false;start()};
-  app.querySelector('#home').onclick=()=>{S.retry=false;S.screen='home';render()};
+    <div class="y">✗ Ваш ответ: ${esc(a.picked.map(i=>LET[i]+') '+q.o[i]).join('; '))}</div>
+    <div class="c">✓ Правильно: ${esc(answerText(q))}</div></div>`}).join('')}</div>`:`<p class="lead">Без единой ошибки.</p>`}`;
+  const r=app.querySelector('#retry'); if(r) r.onclick=()=>{S.saved=false;start(shuffle(wrong.map(w=>w.qi)),{retry:true,fromLesson:S.fromLesson})};
+  const nl=app.querySelector('#nextl'); if(nl) nl.onclick=()=>{S.saved=false;go('study',{lesson:S.fromLesson+1,spos:0,shown:S.autoShow,others:false})};
+  const rs=app.querySelector('#restudy'); if(rs) rs.onclick=()=>{S.saved=false;go('study',{lesson:S.fromLesson,spos:0,shown:S.autoShow,others:false})};
+  const ag=app.querySelector('#again'); if(ag) ag.onclick=()=>{S.saved=false;start()};
+  app.querySelector('#home').onclick=()=>{S.saved=false;go(isLesson?'lessons':'home')};
 }
-function render(){({home,quiz,result})[S.screen]()}
+function render(){({home,lessons,study,quiz,result})[S.screen]()}
 document.addEventListener('keydown',e=>{
-  if(S.screen!=='quiz'||e.ctrlKey||e.metaKey||e.altKey) return;
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(document.activeElement&&document.activeElement.classList.contains('ghost')&&e.key==='Enter') return;
+  if(S.screen==='study'){
+    if(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'){e.preventDefault(); S.shown?studyNext():(S.shown=true,render());}
+    return;
+  }
+  if(S.screen!=='quiz') return;
   const done=!!S.answers[S.pos];
-  if(e.key==='Enter'){ if(document.activeElement&&document.activeElement.classList.contains('ghost')) return;
-    e.preventDefault(); done?next():submit(); return;}
+  if(e.key==='Enter'){e.preventDefault(); done?next():submit(); return;}
   const n=parseInt(e.key,10), q=DATA[S.sec].qs[S.order[S.pos]];
   if(!done&&n>=1&&n<=q.o.length) choose(n-1);
 });
